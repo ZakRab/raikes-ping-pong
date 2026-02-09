@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude mcp add-json:*)",
+      "Bash(claude mcp get:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.convex.dev)",
+      "WebFetch(domain:labs.convex.dev)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "WebFetch(domain:saturncloud.io)",
+      "WebFetch(domain:stack.convex.dev)",
+      "Bash(npm create vite:*)",
+      "Bash(npm install:*)",
+      "Bash(npx convex init:*)",
+      "Bash(npx convex dev:*)",
+      "Bash(npx @convex-dev/auth)",
+      "Bash(npx vite build:*)",
+      "Bash(npx vite:*)",
+      "Bash(npx convex run:*)",
+      "Bash(npx convex deploy:*)",
+      "mcp__claude_ai_Vercel__deploy_to_vercel",
+      "Bash(npx vercel:*)",
+      "Bash(vercel deploy:*)",
+      "Bash(vercel login:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx convex env set:*)",
+      "Bash(npx convex env list:*)",
+      "Bash(npx @convex-dev/auth:*)",
+      "Bash(vercel ls:*)",
+      "Bash(vercel inspect:*)"
+    ]
+  }
+}

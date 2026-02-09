@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --color-raikes-red: #D00000;
+  --color-raikes-red-dark: #A30000;
+  --color-raikes-red-light: #FF2626;
+  --color-raikes-black: #1A1A1A;
+  --color-raikes-gray: #F5F5F5;
+  --color-raikes-gray-dark: #E5E5E5;
+  --color-raikes-white: #FFFFFF;
+}
+
+body {
+  margin: 0;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-raikes-white);
+  color: var(--color-raikes-black);
+}

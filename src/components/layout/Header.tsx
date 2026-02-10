@@ -30,6 +30,12 @@ export default function Header() {
             >
               History
             </Link>
+            <Link
+              to="/rules"
+              className="text-sm font-medium text-raikes-black/60 transition-colors hover:text-raikes-black"
+            >
+              Rules
+            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-4">

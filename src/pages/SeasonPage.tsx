@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import Leaderboard from "../components/season/Leaderboard";
 import WeeklySchedule from "../components/season/WeeklySchedule";
+import RulesContent from "../components/season/RulesContent";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 
 export default function SeasonPage() {
@@ -25,7 +26,7 @@ export default function SeasonPage() {
   const advanceWeek = useMutation(api.seasons.advanceWeek);
   const completeSeason = useMutation(api.seasons.complete);
 
-  const [tab, setTab] = useState<"standings" | "schedule">("standings");
+  const [tab, setTab] = useState<"standings" | "schedule" | "rules">("standings");
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -196,6 +197,16 @@ export default function SeasonPage() {
             >
               Schedule
             </button>
+            <button
+              onClick={() => setTab("rules")}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                tab === "rules"
+                  ? "border-b-2 border-raikes-red text-raikes-red"
+                  : "text-raikes-black/40 hover:text-raikes-black/60"
+              }`}
+            >
+              Rules
+            </button>
           </div>
 
           <div className="mt-6">
@@ -204,7 +215,7 @@ export default function SeasonPage() {
                 standings={standings}
                 currentUserId={currentUserId}
               />
-            ) : (
+            ) : tab === "schedule" ? (
               <WeeklySchedule
                 seasonId={season._id}
                 weekNumber={displayWeek || 1}
@@ -212,6 +223,8 @@ export default function SeasonPage() {
                 currentUserId={currentUserId}
                 onWeekChange={setSelectedWeek}
               />
+            ) : (
+              <RulesContent />
             )}
           </div>
         </>

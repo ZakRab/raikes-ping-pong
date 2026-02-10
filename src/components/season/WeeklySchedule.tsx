@@ -8,12 +8,14 @@ export default function WeeklySchedule({
   seasonId,
   weekNumber,
   totalWeeks,
+  currentWeek,
   currentUserId,
   onWeekChange,
 }: {
   seasonId: Id<"seasons">;
   weekNumber: number;
   totalWeeks: number;
+  currentWeek: number;
   currentUserId?: Id<"users"> | null;
   onWeekChange: (week: number) => void;
 }) {
@@ -52,13 +54,26 @@ export default function WeeklySchedule({
         </p>
       ) : (
         <div className="space-y-2">
-          {matches.map((match) => (
-            <MatchCard
-              key={match._id}
-              match={match}
-              currentUserId={currentUserId}
-            />
-          ))}
+          {[...matches]
+            .sort((a, b) => {
+              const aIsMine =
+                currentUserId &&
+                (a.player1Id === currentUserId || a.player2Id === currentUserId);
+              const bIsMine =
+                currentUserId &&
+                (b.player1Id === currentUserId || b.player2Id === currentUserId);
+              if (aIsMine && !bIsMine) return -1;
+              if (!aIsMine && bIsMine) return 1;
+              return 0;
+            })
+            .map((match) => (
+              <MatchCard
+                key={match._id}
+                match={match}
+                currentUserId={currentUserId}
+                isCurrentWeek={weekNumber === currentWeek}
+              />
+            ))}
         </div>
       )}
     </div>

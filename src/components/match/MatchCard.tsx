@@ -16,9 +16,11 @@ type Match = {
 export default function MatchCard({
   match,
   currentUserId,
+  isCurrentWeek,
 }: {
   match: Match;
   currentUserId?: Id<"users"> | null;
+  isCurrentWeek?: boolean;
 }) {
   const [reporting, setReporting] = useState(false);
   const reportResult = useMutation(api.matches.reportResult);
@@ -27,7 +29,7 @@ export default function MatchCard({
     currentUserId &&
     (match.player1Id === currentUserId || match.player2Id === currentUserId);
 
-  const canReport = match.status === "scheduled" && isParticipant;
+  const canReport = match.status === "scheduled" && isParticipant && isCurrentWeek !== false;
 
   const handleReport = async (winnerId: Id<"users">) => {
     try {

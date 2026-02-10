@@ -103,11 +103,16 @@ export const reportResult = mutation({
 
     // Check reporter is a participant or season creator
     const season = await ctx.db.get(match.seasonId);
+    if (!season) throw new Error("Season not found");
     const isParticipant =
       match.player1Id === userId || match.player2Id === userId;
-    const isCreator = season?.createdBy === userId;
+    const isCreator = season.createdBy === userId;
     if (!isParticipant && !isCreator)
       throw new Error("Only match participants or the season creator can report results");
+
+    // Only allow reporting results for the current week
+    if (match.weekNumber !== season.currentWeek)
+      throw new Error("Results can only be reported for the current week");
 
     // Validate winner is one of the players
     if (args.winnerId !== match.player1Id && args.winnerId !== match.player2Id)

@@ -220,6 +220,7 @@ export default function SeasonPage() {
                 seasonId={season._id}
                 weekNumber={displayWeek || 1}
                 totalWeeks={season.totalWeeks}
+                currentWeek={season.currentWeek}
                 currentUserId={currentUserId}
                 onWeekChange={setSelectedWeek}
               />

@@ -48,6 +48,8 @@ export default defineSchema({
     player1Id: v.id("users"),
     player2Id: v.id("users"),
     winnerId: v.optional(v.id("users")),
+    player1Score: v.optional(v.number()),
+    player2Score: v.optional(v.number()),
     reportedBy: v.optional(v.id("users")),
     status: v.union(v.literal("scheduled"), v.literal("completed")),
   })

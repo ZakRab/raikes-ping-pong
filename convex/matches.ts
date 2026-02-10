@@ -90,7 +90,8 @@ export const getForPlayer = query({
 export const reportResult = mutation({
   args: {
     matchId: v.id("matches"),
-    winnerId: v.id("users"),
+    player1Score: v.number(),
+    player2Score: v.number(),
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
@@ -114,16 +115,22 @@ export const reportResult = mutation({
     if (match.weekNumber !== season.currentWeek)
       throw new Error("Results can only be reported for the current week");
 
-    // Validate winner is one of the players
-    if (args.winnerId !== match.player1Id && args.winnerId !== match.player2Id)
-      throw new Error("Winner must be one of the match players");
+    // Validate scores: best of 5, winner must have 3, loser 0-2
+    const { player1Score, player2Score } = args;
+    const validScores =
+      (player1Score === 3 && player2Score >= 0 && player2Score <= 2) ||
+      (player2Score === 3 && player1Score >= 0 && player1Score <= 2);
+    if (!validScores)
+      throw new Error("Invalid score: winner must have 3 games, loser 0-2");
 
-    const loserId =
-      args.winnerId === match.player1Id ? match.player2Id : match.player1Id;
+    const winnerId = player1Score === 3 ? match.player1Id : match.player2Id;
+    const loserId = winnerId === match.player1Id ? match.player2Id : match.player1Id;
 
     // Update match
     await ctx.db.patch(args.matchId, {
-      winnerId: args.winnerId,
+      winnerId,
+      player1Score,
+      player2Score,
       reportedBy: userId,
       status: "completed",
     });

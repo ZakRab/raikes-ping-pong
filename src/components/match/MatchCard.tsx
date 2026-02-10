@@ -10,6 +10,8 @@ type Match = {
   player1Name: string;
   player2Name: string;
   winnerId?: Id<"users">;
+  player1Score?: number;
+  player2Score?: number;
   status: "scheduled" | "completed";
 };
 
@@ -23,6 +25,9 @@ export default function MatchCard({
   isCurrentWeek?: boolean;
 }) {
   const [reporting, setReporting] = useState(false);
+  const [p1Score, setP1Score] = useState<number | null>(null);
+  const [p2Score, setP2Score] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const reportResult = useMutation(api.matches.reportResult);
 
   const isParticipant =
@@ -31,14 +36,45 @@ export default function MatchCard({
 
   const canReport = match.status === "scheduled" && isParticipant && isCurrentWeek !== false;
 
-  const handleReport = async (winnerId: Id<"users">) => {
+  const handleReport = async () => {
+    if (p1Score === null || p2Score === null) {
+      setError("Enter both scores");
+      return;
+    }
+    const valid =
+      (p1Score === 3 && p2Score >= 0 && p2Score <= 2) ||
+      (p2Score === 3 && p1Score >= 0 && p1Score <= 2);
+    if (!valid) {
+      setError("Winner must have 3, loser 0-2");
+      return;
+    }
     try {
-      await reportResult({ matchId: match._id, winnerId });
+      await reportResult({
+        matchId: match._id,
+        player1Score: p1Score,
+        player2Score: p2Score,
+      });
       setReporting(false);
-    } catch (e) {
-      console.error(e);
+      setError(null);
+    } catch (e: any) {
+      setError(e.message || "Failed to report");
     }
   };
+
+  const scoreButtons = (current: number | null, onChange: (v: number) => void) =>
+    [0, 1, 2, 3].map((n) => (
+      <button
+        key={n}
+        onClick={() => { onChange(n); setError(null); }}
+        className={`h-8 w-8 rounded text-sm font-medium transition-colors ${
+          current === n
+            ? "bg-raikes-red text-white"
+            : "border border-raikes-gray-dark hover:border-raikes-red hover:text-raikes-red"
+        }`}
+      >
+        {n}
+      </button>
+    ));
 
   return (
     <div className="rounded-lg border border-raikes-gray-dark bg-white p-4">
@@ -55,7 +91,13 @@ export default function MatchCard({
           >
             {match.player1Name}
           </span>
-          <span className="text-xs font-medium text-raikes-black/30">VS</span>
+          {match.status === "completed" && match.player1Score != null && match.player2Score != null ? (
+            <span className="text-sm font-semibold tabular-nums text-raikes-black/60">
+              {match.player1Score} – {match.player2Score}
+            </span>
+          ) : (
+            <span className="text-xs font-medium text-raikes-black/30">VS</span>
+          )}
           <span
             className={`font-medium ${
               match.winnerId === match.player2Id
@@ -90,27 +132,42 @@ export default function MatchCard({
 
       {reporting && (
         <div className="mt-3 border-t border-raikes-gray-dark pt-3">
-          <p className="mb-2 text-xs text-raikes-black/50">Who won?</p>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <p className="mb-1.5 text-xs font-medium text-raikes-black/50">
+                {match.player1Name}
+              </p>
+              <div className="flex gap-1.5">
+                {scoreButtons(p1Score, setP1Score)}
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="mb-1.5 text-xs font-medium text-raikes-black/50">
+                {match.player2Name}
+              </p>
+              <div className="flex gap-1.5">
+                {scoreButtons(p2Score, setP2Score)}
+              </div>
+            </div>
+          </div>
+          {error && (
+            <p className="mt-2 text-xs text-red-500">{error}</p>
+          )}
+          <div className="mt-3 flex items-center gap-3">
             <button
-              onClick={() => handleReport(match.player1Id)}
-              className="flex-1 rounded-md border border-raikes-gray-dark px-3 py-2 text-sm font-medium transition-colors hover:border-raikes-red hover:bg-raikes-red/5 hover:text-raikes-red"
+              onClick={handleReport}
+              disabled={p1Score === null || p2Score === null}
+              className="rounded-md bg-raikes-red px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-raikes-red-dark disabled:opacity-40"
             >
-              {match.player1Name}
+              Submit
             </button>
             <button
-              onClick={() => handleReport(match.player2Id)}
-              className="flex-1 rounded-md border border-raikes-gray-dark px-3 py-2 text-sm font-medium transition-colors hover:border-raikes-red hover:bg-raikes-red/5 hover:text-raikes-red"
+              onClick={() => { setReporting(false); setP1Score(null); setP2Score(null); setError(null); }}
+              className="text-xs text-raikes-black/40 hover:text-raikes-black"
             >
-              {match.player2Name}
+              Cancel
             </button>
           </div>
-          <button
-            onClick={() => setReporting(false)}
-            className="mt-2 text-xs text-raikes-black/40 hover:text-raikes-black"
-          >
-            Cancel
-          </button>
         </div>
       )}
     </div>

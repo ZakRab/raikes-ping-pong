@@ -139,7 +139,7 @@ export const reportResult = mutation({
     const winnerSP = await ctx.db
       .query("seasonPlayers")
       .withIndex("by_season_and_user", (q) =>
-        q.eq("seasonId", match.seasonId).eq("userId", args.winnerId)
+        q.eq("seasonId", match.seasonId).eq("userId", winnerId)
       )
       .first();
     if (winnerSP) {

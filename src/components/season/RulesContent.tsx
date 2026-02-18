@@ -45,8 +45,13 @@ export default function RulesContent() {
           Scheduling
         </h3>
         <p className="mt-2 text-sm text-raikes-black/70">
-          DM your opponent to set up a time to play. Matches should be completed
-          within the week they are scheduled.
+          Set your weekly availability in the Availability tab. Matches are
+          auto-scheduled based on overlapping free times. If your match shows
+          "Time TBD," it means there was no overlap — use the "View Availability"
+          button to see each other's schedules, then hit "Reschedule" to pick a
+          time that works. You can also reschedule any auto-assigned time if
+          something comes up. Matches should be completed within the week they
+          are scheduled.
         </p>
       </section>
 
@@ -55,7 +60,8 @@ export default function RulesContent() {
           Reporting
         </h3>
         <p className="mt-2 text-sm text-raikes-black/70">
-          After your match, update the winner on the site. Both players are
+          After your match, hit "Report Result" on the match card and enter the
+          score. Both players will get a DM confirmation. Both players are
           responsible for ensuring results are recorded promptly.
         </p>
       </section>

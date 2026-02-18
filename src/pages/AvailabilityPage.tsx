@@ -14,7 +14,7 @@ export default function AvailabilityPage() {
 
   const [localSlots, setLocalSlots] = useState<Record<string, number> | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     if (myAvailability !== undefined && localSlots === null) {

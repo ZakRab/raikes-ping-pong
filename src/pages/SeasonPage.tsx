@@ -51,7 +51,7 @@ export default function SeasonPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [localSlots, setLocalSlots] = useState<Record<string, number> | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Sync from server when availability loads
   useEffect(() => {

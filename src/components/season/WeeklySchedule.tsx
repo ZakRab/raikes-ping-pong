@@ -11,6 +11,8 @@ export default function WeeklySchedule({
   currentWeek,
   currentUserId,
   onWeekChange,
+  seasonStartDate,
+  isAdmin,
 }: {
   seasonId: Id<"seasons">;
   weekNumber: number;
@@ -18,6 +20,8 @@ export default function WeeklySchedule({
   currentWeek: number;
   currentUserId?: Id<"users"> | null;
   onWeekChange: (week: number) => void;
+  seasonStartDate?: string;
+  isAdmin?: boolean;
 }) {
   const matches = useQuery(api.matches.getForWeek, {
     seasonId,
@@ -56,6 +60,7 @@ export default function WeeklySchedule({
         <div className="space-y-2">
           {[...matches]
             .sort((a, b) => {
+              // Current user's matches first
               const aIsMine =
                 currentUserId &&
                 (a.player1Id === currentUserId || a.player2Id === currentUserId);
@@ -64,6 +69,22 @@ export default function WeeklySchedule({
                 (b.player1Id === currentUserId || b.player2Id === currentUserId);
               if (aIsMine && !bIsMine) return -1;
               if (!aIsMine && bIsMine) return 1;
+
+              // Scheduled matches before TBD
+              const aScheduled = a.scheduledDay && a.scheduledTime;
+              const bScheduled = b.scheduledDay && b.scheduledTime;
+              if (aScheduled && !bScheduled) return -1;
+              if (!aScheduled && bScheduled) return 1;
+
+              // Sort scheduled matches chronologically
+              if (aScheduled && bScheduled) {
+                const dayOrder = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+                const aDayIdx = dayOrder.indexOf(a.scheduledDay!);
+                const bDayIdx = dayOrder.indexOf(b.scheduledDay!);
+                if (aDayIdx !== bDayIdx) return aDayIdx - bDayIdx;
+                return a.scheduledTime!.localeCompare(b.scheduledTime!);
+              }
+
               return 0;
             })
             .map((match) => (
@@ -72,6 +93,9 @@ export default function WeeklySchedule({
                 match={match}
                 currentUserId={currentUserId}
                 isCurrentWeek={weekNumber === currentWeek}
+                seasonStartDate={seasonStartDate}
+                calendarWeek={weekNumber}
+                isAdmin={isAdmin}
               />
             ))}
         </div>

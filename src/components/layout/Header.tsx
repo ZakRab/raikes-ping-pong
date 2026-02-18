@@ -36,6 +36,22 @@ export default function Header() {
             >
               Rules
             </Link>
+            {isAuthenticated && (
+              <Link
+                to="/availability"
+                className="text-sm font-medium text-raikes-black/60 transition-colors hover:text-raikes-black"
+              >
+                Availability
+              </Link>
+            )}
+            {user?.isAdmin && (
+              <Link
+                to="/admin/groupme"
+                className="text-sm font-medium text-raikes-black/60 transition-colors hover:text-raikes-black"
+              >
+                GroupMe
+              </Link>
+            )}
           </nav>
         </div>
         <div className="flex items-center gap-4">

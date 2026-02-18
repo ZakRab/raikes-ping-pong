@@ -18,10 +18,10 @@ export const getProfile = query({
     if (!user) return null;
 
     // Get all season participations
-    const allSeasonPlayers = await ctx.db.query("seasonPlayers").collect();
-    const participations = allSeasonPlayers.filter(
-      (sp) => sp.userId === args.userId
-    );
+    const participations = await ctx.db
+      .query("seasonPlayers")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
 
     // Enrich with season info
     const seasons = await Promise.all(

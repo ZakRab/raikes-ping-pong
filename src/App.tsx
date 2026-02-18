@@ -7,6 +7,9 @@ import AuthPage from "./pages/AuthPage";
 import CreateSeasonPage from "./pages/CreateSeasonPage";
 import PlayerPage from "./pages/PlayerPage";
 import RulesPage from "./pages/RulesPage";
+import AvailabilityPage from "./pages/AvailabilityPage";
+import AdminGroupMePage from "./pages/AdminGroupMePage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 export default function App() {
   return (
@@ -19,6 +22,9 @@ export default function App() {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/seasons/new" element={<CreateSeasonPage />} />
         <Route path="/players/:userId" element={<PlayerPage />} />
+        <Route path="/availability" element={<AvailabilityPage />} />
+        <Route path="/admin/groupme" element={<AdminGroupMePage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
   );

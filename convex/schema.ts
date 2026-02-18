@@ -14,6 +14,7 @@ export default defineSchema({
     phoneVerificationTime: v.optional(v.number()),
     isAnonymous: v.optional(v.boolean()),
     isAdmin: v.optional(v.boolean()),
+    groupmeUserId: v.optional(v.string()),
   }).index("email", ["email"]),
 
   seasons: defineTable({
@@ -40,7 +41,8 @@ export default defineSchema({
     losses: v.number(),
   })
     .index("by_season", ["seasonId"])
-    .index("by_season_and_user", ["seasonId", "userId"]),
+    .index("by_season_and_user", ["seasonId", "userId"])
+    .index("by_user", ["userId"]),
 
   matches: defineTable({
     seasonId: v.id("seasons"),
@@ -52,10 +54,18 @@ export default defineSchema({
     player2Score: v.optional(v.number()),
     reportedBy: v.optional(v.id("users")),
     status: v.union(v.literal("scheduled"), v.literal("completed")),
+    scheduledDay: v.optional(v.string()),
+    scheduledTime: v.optional(v.string()),
   })
     .index("by_season", ["seasonId"])
     .index("by_season_and_week", ["seasonId", "weekNumber"])
     .index("by_season_and_player1", ["seasonId", "player1Id"])
     .index("by_season_and_player2", ["seasonId", "player2Id"])
     .index("by_season_and_status", ["seasonId", "status"]),
+
+  playerAvailability: defineTable({
+    userId: v.id("users"),
+    slots: v.any(),
+    updatedAt: v.number(),
+  }).index("by_user", ["userId"]),
 });

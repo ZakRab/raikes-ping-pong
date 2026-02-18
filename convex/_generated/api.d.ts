@@ -10,7 +10,13 @@
 
 import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
+import type * as autoScheduler from "../autoScheduler.js";
+import type * as availability from "../availability.js";
+import type * as crons from "../crons.js";
+import type * as groupme from "../groupme.js";
+import type * as groupmeAdmin from "../groupmeAdmin.js";
 import type * as http from "../http.js";
+import type * as matchReminders from "../matchReminders.js";
 import type * as matches from "../matches.js";
 import type * as scheduling from "../scheduling.js";
 import type * as seasons from "../seasons.js";
@@ -26,7 +32,13 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   auth: typeof auth;
+  autoScheduler: typeof autoScheduler;
+  availability: typeof availability;
+  crons: typeof crons;
+  groupme: typeof groupme;
+  groupmeAdmin: typeof groupmeAdmin;
   http: typeof http;
+  matchReminders: typeof matchReminders;
   matches: typeof matches;
   scheduling: typeof scheduling;
   seasons: typeof seasons;

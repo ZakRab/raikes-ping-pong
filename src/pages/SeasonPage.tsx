@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useParams } from "react-router";
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -6,7 +6,9 @@ import type { Id } from "../../convex/_generated/dataModel";
 import Leaderboard from "../components/season/Leaderboard";
 import WeeklySchedule from "../components/season/WeeklySchedule";
 import RulesContent from "../components/season/RulesContent";
+import AvailabilityGrid from "../components/availability/AvailabilityGrid";
 import LoadingSpinner from "../components/common/LoadingSpinner";
+import { formatScheduledTime } from "../lib/time";
 
 export default function SeasonPage() {
   const { seasonId } = useParams();
@@ -24,11 +26,53 @@ export default function SeasonPage() {
   const joinSeason = useMutation(api.seasons.join);
   const startSeason = useMutation(api.seasons.start);
   const advanceWeek = useMutation(api.seasons.advanceWeek);
+  const rerunScheduler = useMutation(api.seasons.rerunScheduler);
   const completeSeason = useMutation(api.seasons.complete);
 
-  const [tab, setTab] = useState<"standings" | "schedule" | "rules">("standings");
+  const unplayedCount = useQuery(
+    api.matches.getUnplayedCount,
+    seasonId && season?.status === "active"
+      ? { seasonId: seasonId as Id<"seasons">, weekNumber: season.currentWeek }
+      : "skip"
+  );
+
+  const nextMatch = useQuery(
+    api.matches.getNextForPlayer,
+    seasonId && viewer?._id
+      ? { seasonId: seasonId as Id<"seasons">, userId: viewer._id }
+      : "skip"
+  );
+
+  const myAvailability = useQuery(api.availability.getMyAvailability);
+  const saveAvailability = useMutation(api.availability.saveAvailability);
+
+  const [tab, setTab] = useState<"standings" | "schedule" | "rules" | "availability">("standings");
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [localSlots, setLocalSlots] = useState<Record<string, number> | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Sync from server when availability loads
+  useEffect(() => {
+    if (myAvailability !== undefined && localSlots === null) {
+      setLocalSlots((myAvailability?.slots as Record<string, number>) ?? {});
+    }
+  }, [myAvailability, localSlots]);
+
+  const handleSlotsChange = useCallback(
+    (newSlots: Record<string, number>) => {
+      setLocalSlots(newSlots);
+      setSaveStatus("saving");
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(async () => {
+        await saveAvailability({ slots: newSlots });
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus("idle"), 2000);
+      }, 1000);
+    },
+    [saveAvailability]
+  );
 
   if (season === undefined || standings === undefined) {
     return <LoadingSpinner />;
@@ -48,6 +92,8 @@ export default function SeasonPage() {
   const isAdmin = viewer?.isAdmin === true;
   const isJoined = standings.some((p) => p.userId === currentUserId);
   const displayWeek = selectedWeek ?? season.currentWeek;
+  const hasAvailability = myAvailability?.slots && Object.keys(myAvailability.slots as Record<string, number>).length > 0;
+  const showAvailabilityBanner = isAuthenticated && isJoined && season.status === "active" && myAvailability !== undefined && !hasAvailability;
 
   const handleAction = async (action: () => Promise<unknown>) => {
     setActionLoading(true);
@@ -112,15 +158,45 @@ export default function SeasonPage() {
               )}
             </>
           )}
+          {season.status === "active" && isAuthenticated && !isJoined && (
+            <button
+              onClick={() =>
+                handleAction(() =>
+                  joinSeason({ seasonId: season._id })
+                )
+              }
+              disabled={actionLoading}
+              className="rounded-md bg-raikes-red px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-raikes-red-dark disabled:opacity-50"
+            >
+              Join Season
+            </button>
+          )}
           {season.status === "active" && isAdmin && (
             <>
+              <button
+                onClick={() => {
+                  if (!window.confirm("Re-run the scheduler? This will clear and reassign all unplayed match times for this week.")) return;
+                  handleAction(() =>
+                    rerunScheduler({ seasonId: season._id })
+                  );
+                }}
+                disabled={actionLoading}
+                className="rounded-md border border-raikes-gray-dark px-3 py-1.5 text-sm font-medium transition-colors hover:bg-raikes-gray disabled:opacity-50"
+              >
+                Re-run Scheduler
+              </button>
               {season.currentWeek < season.totalWeeks && (
                 <button
-                  onClick={() =>
+                  onClick={() => {
+                    const unplayed = unplayedCount ?? 0;
+                    const msg = unplayed > 0
+                      ? `Advance to week ${season.currentWeek + 1}? There are ${unplayed} unplayed matches this week that will no longer be reportable.`
+                      : `Advance to week ${season.currentWeek + 1}? Any unplayed matches from this week can no longer have results reported.`;
+                    if (!window.confirm(msg)) return;
                     handleAction(() =>
                       advanceWeek({ seasonId: season._id })
-                    )
-                  }
+                    );
+                  }}
                   disabled={actionLoading}
                   className="rounded-md border border-raikes-gray-dark px-3 py-1.5 text-sm font-medium transition-colors hover:bg-raikes-gray disabled:opacity-50"
                 >
@@ -128,11 +204,12 @@ export default function SeasonPage() {
                 </button>
               )}
               <button
-                onClick={() =>
+                onClick={() => {
+                  if (!window.confirm("End this season? This cannot be undone.")) return;
                   handleAction(() =>
                     completeSeason({ seasonId: season._id })
-                  )
-                }
+                  );
+                }}
                 disabled={actionLoading}
                 className="rounded-md border border-raikes-gray-dark px-3 py-1.5 text-sm font-medium text-raikes-red transition-colors hover:bg-red-50 disabled:opacity-50"
               >
@@ -147,6 +224,35 @@ export default function SeasonPage() {
           )}
         </div>
       </div>
+
+      {showAvailabilityBanner && (
+        <div className="mt-4 flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm text-amber-800">
+            Set your weekly availability so matches can be auto-scheduled for you.
+          </p>
+          <button
+            onClick={() => setTab("availability")}
+            className="ml-4 shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-amber-700"
+          >
+            Set Availability
+          </button>
+        </div>
+      )}
+
+      {nextMatch && season.status === "active" && (
+        <div className="mt-4 flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+          <div className="text-sm text-blue-800">
+            <span className="font-medium">Your Next Match:</span>{" "}
+            vs {nextMatch.opponentName} —{" "}
+            {formatScheduledTime(nextMatch.scheduledDay, nextMatch.scheduledTime) || "Time TBD"}
+            {nextMatch.totalCount > 1 && (
+              <span className="ml-2 text-blue-600">
+                +{nextMatch.totalCount - 1} more this week
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Registration player list */}
       {season.status === "registration" && (
@@ -207,6 +313,18 @@ export default function SeasonPage() {
             >
               Rules
             </button>
+            {isAuthenticated && isJoined && (
+              <button
+                onClick={() => setTab("availability")}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  tab === "availability"
+                    ? "border-b-2 border-raikes-red text-raikes-red"
+                    : "text-raikes-black/40 hover:text-raikes-black/60"
+                }`}
+              >
+                Availability
+              </button>
+            )}
           </div>
 
           <div className="mt-6">
@@ -223,9 +341,32 @@ export default function SeasonPage() {
                 currentWeek={season.currentWeek}
                 currentUserId={currentUserId}
                 onWeekChange={setSelectedWeek}
+                seasonStartDate={season.startDate}
+                isAdmin={isAdmin}
               />
-            ) : (
+            ) : tab === "rules" ? (
               <RulesContent />
+            ) : tab === "availability" && localSlots !== null ? (
+              <div>
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-sm font-medium text-raikes-black/60">
+                    Set your weekly availability for match scheduling
+                  </h2>
+                  <span className="text-xs text-raikes-black/40">
+                    {saveStatus === "saving"
+                      ? "Saving..."
+                      : saveStatus === "saved"
+                        ? "Saved"
+                        : ""}
+                  </span>
+                </div>
+                <AvailabilityGrid
+                  slots={localSlots}
+                  onChange={handleSlotsChange}
+                />
+              </div>
+            ) : (
+              <LoadingSpinner />
             )}
           </div>
         </>

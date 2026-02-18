@@ -164,9 +164,15 @@ async function scheduleWeekMatches(ctx: MutationCtx, seasonId: Id<"seasons">, we
 
   if (weekMatches.length === 0) return;
 
-  // Collect unique player IDs
+  // Split into already-scheduled and TBD matches
+  const unscheduled = weekMatches.filter(
+    (m) => m.status === "scheduled" && !m.scheduledDay && !m.scheduledTime
+  );
+  if (unscheduled.length === 0) return;
+
+  // Collect unique player IDs from unscheduled matches
   const playerIds = new Set<string>();
-  for (const m of weekMatches) {
+  for (const m of unscheduled) {
     playerIds.add(m.player1Id);
     playerIds.add(m.player2Id);
   }
@@ -183,7 +189,7 @@ async function scheduleWeekMatches(ctx: MutationCtx, seasonId: Id<"seasons">, we
     }
   }
 
-  const results = autoScheduleMatches(weekMatches, availabilityMap);
+  const results = autoScheduleMatches(unscheduled, availabilityMap, weekMatches);
 
   const DAY_LABELS: Record<string, string> = {
     mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun",
@@ -313,9 +319,9 @@ export const rerunScheduler = mutation({
       )
       .collect();
 
-    // Clear scheduledDay/scheduledTime on unplayed matches
+    // Clear only TBD matches (no scheduled time set)
     for (const match of weekMatches) {
-      if (match.status === "scheduled") {
+      if (match.status === "scheduled" && !match.scheduledDay && !match.scheduledTime) {
         await ctx.db.patch(match._id, {
           scheduledDay: undefined,
           scheduledTime: undefined,
@@ -323,7 +329,7 @@ export const rerunScheduler = mutation({
       }
     }
 
-    // Re-run the auto-scheduler
+    // Re-run the auto-scheduler (only assigns TBD matches)
     await scheduleWeekMatches(ctx, args.seasonId, season.currentWeek);
   },
 });

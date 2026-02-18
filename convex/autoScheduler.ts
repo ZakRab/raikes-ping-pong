@@ -62,12 +62,41 @@ function spacingScore(
   return Math.min(minDist / DAY_MINUTES, 1) * 3;
 }
 
+type ExistingMatch = {
+  _id: Id<"matches">;
+  player1Id: Id<"users">;
+  player2Id: Id<"users">;
+  scheduledDay?: string;
+  scheduledTime?: string;
+  status: string;
+};
+
 export function autoScheduleMatches(
   matches: MatchInput[],
-  availabilityMap: Map<string, Record<string, number>>
+  availabilityMap: Map<string, Record<string, number>>,
+  allWeekMatches?: ExistingMatch[]
 ): ScheduleResult[] {
   const allSlots = generateAllSlotKeys();
   const results: ScheduleResult[] = [];
+
+  // Pre-populate occupied slots from already-scheduled matches
+  const tableSlots = new Set<string>();
+  const assignedSlots = new Map<string, Set<string>>();
+  const getAssigned = (playerId: string) => {
+    if (!assignedSlots.has(playerId)) assignedSlots.set(playerId, new Set());
+    return assignedSlots.get(playerId)!;
+  };
+
+  if (allWeekMatches) {
+    for (const m of allWeekMatches) {
+      if (m.scheduledDay && m.scheduledTime) {
+        const slot = `${m.scheduledDay}-${m.scheduledTime}`;
+        tableSlots.add(slot);
+        getAssigned(m.player1Id).add(slot);
+        getAssigned(m.player2Id).add(slot);
+      }
+    }
+  }
 
   // For each match, compute candidate slots with base preference scores
   const matchCandidates = matches.map((match) => {
@@ -88,16 +117,6 @@ export function autoScheduleMatches(
 
   // Sort matches by fewest candidates first (most-constrained-first)
   matchCandidates.sort((a, b) => a.candidates.length - b.candidates.length);
-
-  // Track assigned slots per player (for blocking + spacing)
-  const assignedSlots = new Map<string, Set<string>>();
-  const getAssigned = (playerId: string) => {
-    if (!assignedSlots.has(playerId)) assignedSlots.set(playerId, new Set());
-    return assignedSlots.get(playerId)!;
-  };
-
-  // One table: only one match can happen at a time
-  const tableSlots = new Set<string>();
 
   for (const { match, candidates } of matchCandidates) {
     const p1Assigned = getAssigned(match.player1Id);

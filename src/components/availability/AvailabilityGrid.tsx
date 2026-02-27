@@ -38,9 +38,11 @@ const PREF_COLORS: Record<number, string> = {
 export default function AvailabilityGrid({
   slots,
   onChange,
+  calendarEvents,
 }: {
   slots: Record<string, number>;
   onChange: (slots: Record<string, number>) => void;
+  calendarEvents?: Record<string, string>;
 }) {
   const isMobile = useIsMobile();
   const [selectedDay, setSelectedDay] = useState(0);
@@ -135,12 +137,14 @@ export default function AvailabilityGrid({
     };
   }, []);
 
+  const hasCalendar = calendarEvents && Object.keys(calendarEvents).length > 0;
+
   if (isMobile) {
     const day = DAYS[selectedDay];
     return (
       <div>
         <div className="mb-4">
-          <AvailabilityLegend />
+          <AvailabilityLegend showCalendar={!!hasCalendar} />
         </div>
         <div className="mb-3 flex items-center justify-between">
           <p className="text-xs text-raikes-black/40">
@@ -183,12 +187,17 @@ export default function AvailabilityGrid({
           {TIME_SLOTS.map((time) => {
             const key = getSlotKey(day, time);
             const pref = slots[key] ?? 0;
+            const calEvent = calendarEvents?.[key];
             return (
               <div
                 key={key}
                 data-slot-key={key}
                 className={`flex cursor-pointer items-center border-b border-white/60 px-3 transition-colors ${PREF_COLORS[pref]}`}
-                style={{ height: 44 }}
+                style={{
+                  height: 44,
+                  borderLeft: calEvent ? "4px solid #3B82F6" : undefined,
+                  backgroundColor: calEvent && pref === 0 ? "#DBEAFE" : undefined,
+                }}
                 onMouseDown={() => handleMouseDown(day, time)}
                 onMouseEnter={() => handleMouseEnter(day, time)}
                 onTouchStart={() => handleTouchStart(day, time)}
@@ -196,6 +205,11 @@ export default function AvailabilityGrid({
                 <span className="text-sm text-raikes-black/60">
                   {formatTime(time)}
                 </span>
+                {calEvent && (
+                  <span className="ml-auto max-w-[140px] truncate text-xs text-blue-600">
+                    {calEvent}
+                  </span>
+                )}
               </div>
             );
           })}
@@ -208,7 +222,7 @@ export default function AvailabilityGrid({
   return (
     <div>
       <div className="mb-4">
-        <AvailabilityLegend />
+        <AvailabilityLegend showCalendar={!!hasCalendar} />
       </div>
       <div className="mb-3 flex items-center justify-between">
         <p className="text-xs text-raikes-black/40">
@@ -252,14 +266,32 @@ export default function AvailabilityGrid({
               {DAYS.map((day) => {
                 const key = getSlotKey(day, time);
                 const pref = slots[key] ?? 0;
+                const calEvent = calendarEvents?.[key];
                 return (
                   <div
                     key={key}
-                    className={`cursor-pointer border border-white/60 transition-colors ${PREF_COLORS[pref]}`}
-                    style={{ height: 24, minWidth: 48 }}
+                    className={`group relative cursor-pointer border border-white/60 transition-colors ${
+                      calEvent && pref === 0
+                        ? "bg-blue-100"
+                        : PREF_COLORS[pref]
+                    }`}
+                    style={{
+                      height: 24,
+                      minWidth: 48,
+                      borderLeft: calEvent
+                        ? "3px solid #3B82F6"
+                        : undefined,
+                    }}
                     onMouseDown={() => handleMouseDown(day, time)}
                     onMouseEnter={() => handleMouseEnter(day, time)}
-                  />
+                    title={calEvent || undefined}
+                  >
+                    {calEvent && (
+                      <span className="absolute inset-0 flex items-center overflow-hidden pl-1 text-[9px] leading-none text-blue-700/70">
+                        {calEvent}
+                      </span>
+                    )}
+                  </div>
                 );
               })}
             </Fragment>

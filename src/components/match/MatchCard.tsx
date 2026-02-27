@@ -68,7 +68,7 @@ export default function MatchCard({
     currentUserId &&
     (match.player1Id === currentUserId || match.player2Id === currentUserId);
 
-  const canReport = match.status === "scheduled" && isParticipant && isCurrentWeek !== false;
+  const canReport = match.status === "scheduled" && (isParticipant || isAdmin);
   const canReschedule = match.status === "scheduled" && isParticipant && isCurrentWeek !== false;
   const isTBD = match.status === "scheduled" && !match.scheduledDay && !match.scheduledTime;
   const isScheduled = match.status === "scheduled" && match.scheduledDay && match.scheduledTime;

@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { auth } from "./auth";
 
@@ -8,10 +8,14 @@ export const getMyAvailability = query({
     const userId = await auth.getUserId(ctx);
     if (!userId) return null;
 
-    return await ctx.db
+    const avail = await ctx.db
       .query("playerAvailability")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
+
+    if (!avail) return null;
+
+    return avail;
   },
 });
 
@@ -77,3 +81,74 @@ export const saveAvailability = mutation({
     }
   },
 });
+
+export const saveCalendarUrl = mutation({
+  args: {
+    calendarUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const existing = await ctx.db
+      .query("playerAvailability")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        calendarUrl: args.calendarUrl || undefined,
+      });
+    } else {
+      await ctx.db.insert("playerAvailability", {
+        userId,
+        slots: {},
+        calendarUrl: args.calendarUrl || undefined,
+        updatedAt: Date.now(),
+      });
+    }
+  },
+});
+
+export const fetchCalendarFeed = action({
+  args: {
+    calendarUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    if (
+      !args.calendarUrl.startsWith("https://") &&
+      !args.calendarUrl.startsWith("http://")
+    ) {
+      return { icsText: null, error: "Invalid URL: must start with https://" };
+    }
+
+    try {
+      const response = await fetch(args.calendarUrl);
+      if (!response.ok) {
+        return {
+          icsText: null,
+          error: `Failed to fetch calendar (${response.status})`,
+        };
+      }
+
+      const text = await response.text();
+      if (!text.includes("BEGIN:VCALENDAR")) {
+        return {
+          icsText: null,
+          error: "Not a valid iCalendar feed",
+        };
+      }
+
+      return { icsText: text, error: null };
+    } catch (e: unknown) {
+      return {
+        icsText: null,
+        error: `Failed to fetch calendar: ${e instanceof Error ? e.message : "unknown error"}`,
+      };
+    }
+  },
+});
+

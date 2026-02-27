@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import AvailabilityGrid from "../components/availability/AvailabilityGrid";
+import CalendarSync from "../components/availability/CalendarSync";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 
 export default function AvailabilityPage() {
@@ -15,6 +16,7 @@ export default function AvailabilityPage() {
   const [localSlots, setLocalSlots] = useState<Record<string, number> | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [calendarEvents, setCalendarEvents] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (myAvailability !== undefined && localSlots === null) {
@@ -36,6 +38,25 @@ export default function AvailabilityPage() {
     [saveAvailability]
   );
 
+  const handleMarkFreeAsAvailable = useCallback(() => {
+    if (!localSlots) return;
+    const updated = { ...localSlots };
+    const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+    for (const day of DAYS) {
+      for (let h = 8; h < 22; h++) {
+        for (let m = 0; m < 60; m += 30) {
+          const hh = String(h).padStart(2, "0");
+          const mm = String(m).padStart(2, "0");
+          const key = `${day}-${hh}:${mm}`;
+          if (!calendarEvents[key] && !updated[key]) {
+            updated[key] = 1;
+          }
+        }
+      }
+    }
+    handleSlotsChange(updated);
+  }, [localSlots, calendarEvents, handleSlotsChange]);
+
   if (!isAuthenticated) {
     return (
       <div className="py-16 text-center">
@@ -49,6 +70,10 @@ export default function AvailabilityPage() {
   if (localSlots === null) {
     return <LoadingSpinner />;
   }
+
+  const hasCalendarEvents = Object.keys(calendarEvents).length > 0;
+  const savedUrl = (myAvailability as Record<string, unknown> | null | undefined)
+    ?.calendarUrl as string | undefined;
 
   return (
     <div>
@@ -69,7 +94,26 @@ export default function AvailabilityPage() {
               : ""}
         </span>
       </div>
-      <AvailabilityGrid slots={localSlots} onChange={handleSlotsChange} />
+
+      <div className="mb-6">
+        <CalendarSync savedUrl={savedUrl} onEventsChange={setCalendarEvents} />
+        {hasCalendarEvents && (
+          <div className="mt-2 flex justify-end">
+            <button
+              onClick={handleMarkFreeAsAvailable}
+              className="rounded-md border border-green-300 bg-green-50 px-3 py-1 text-xs font-medium text-green-700 transition-colors hover:bg-green-100"
+            >
+              Mark free slots as available
+            </button>
+          </div>
+        )}
+      </div>
+
+      <AvailabilityGrid
+        slots={localSlots}
+        onChange={handleSlotsChange}
+        calendarEvents={hasCalendarEvents ? calendarEvents : undefined}
+      />
     </div>
   );
 }

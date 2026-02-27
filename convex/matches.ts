@@ -178,9 +178,9 @@ export const reportResult = mutation({
     if (!isParticipant && !isCreator)
       throw new ConvexError("Only match participants or the season creator can report results");
 
-    // Only allow reporting results for the current week
-    if (match.weekNumber !== season.currentWeek)
-      throw new ConvexError("Results can only be reported for the current week");
+    // Only block reporting results for future weeks
+    if (match.weekNumber > season.currentWeek)
+      throw new ConvexError("Results cannot be reported for future weeks");
 
     // Validate scores: best of 5, winner must have 3, loser 0-2
     const { player1Score, player2Score } = args;

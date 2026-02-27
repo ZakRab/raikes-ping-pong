@@ -3,15 +3,29 @@ const LEVELS = [
   { value: 1, label: "Available", color: "bg-green-400" },
 ];
 
-export default function AvailabilityLegend() {
+export default function AvailabilityLegend({
+  showCalendar = false,
+}: {
+  showCalendar?: boolean;
+}) {
   return (
     <div className="flex flex-wrap gap-3">
       {LEVELS.map((l) => (
         <div key={l.value} className="flex items-center gap-1.5">
-          <div className={`h-4 w-4 rounded ${l.color} border border-raikes-gray-dark`} />
+          <div
+            className={`h-4 w-4 rounded ${l.color} border border-raikes-gray-dark`}
+          />
           <span className="text-xs text-raikes-black/60">{l.label}</span>
         </div>
       ))}
+      {showCalendar && (
+        <div className="flex items-center gap-1.5">
+          <div className="h-4 w-4 rounded border border-blue-300 bg-blue-100">
+            <div className="h-full w-1 rounded-l bg-blue-500" />
+          </div>
+          <span className="text-xs text-raikes-black/60">Calendar event</span>
+        </div>
+      )}
     </div>
   );
 }

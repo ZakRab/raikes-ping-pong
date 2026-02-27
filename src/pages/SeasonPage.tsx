@@ -7,6 +7,7 @@ import Leaderboard from "../components/season/Leaderboard";
 import WeeklySchedule from "../components/season/WeeklySchedule";
 import RulesContent from "../components/season/RulesContent";
 import AvailabilityGrid from "../components/availability/AvailabilityGrid";
+import CalendarSync from "../components/availability/CalendarSync";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { formatScheduledTime } from "../lib/time";
 
@@ -52,6 +53,7 @@ export default function SeasonPage() {
   const [localSlots, setLocalSlots] = useState<Record<string, number> | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [calendarEvents, setCalendarEvents] = useState<Record<string, string>>({});
 
   // Sync from server when availability loads
   useEffect(() => {
@@ -360,9 +362,23 @@ export default function SeasonPage() {
                         : ""}
                   </span>
                 </div>
+                <div className="mb-4">
+                  <CalendarSync
+                    savedUrl={
+                      (myAvailability as Record<string, unknown> | null | undefined)
+                        ?.calendarUrl as string | undefined
+                    }
+                    onEventsChange={setCalendarEvents}
+                  />
+                </div>
                 <AvailabilityGrid
                   slots={localSlots}
                   onChange={handleSlotsChange}
+                  calendarEvents={
+                    Object.keys(calendarEvents).length > 0
+                      ? calendarEvents
+                      : undefined
+                  }
                 />
               </div>
             ) : (

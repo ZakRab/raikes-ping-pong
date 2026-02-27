@@ -67,5 +67,6 @@ export default defineSchema({
     userId: v.id("users"),
     slots: v.any(),
     updatedAt: v.number(),
+    calendarUrl: v.optional(v.string()),
   }).index("by_user", ["userId"]),
 });
